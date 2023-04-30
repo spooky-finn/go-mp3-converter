@@ -3,7 +3,6 @@ package internal
 import (
 	"errors"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -23,14 +22,12 @@ var (
 	ErrNetDownloadFile      = errors.New("network failure while downloading file")
 )
 
-var logger = log.New(os.Stdout, "internal: ", log.LstdFlags)
-
 // ProgResponse counts the number of bytes written to it. It implements to the io.Writer interface
 // and we can pass this into io.TeeReader() which will report progress on each write cycle.
 type ProgResponse struct {
 	downloaded float64
 	total      float64
-	prog       *helpers.Progress
+	progress   *helpers.Progress
 	ticker     *time.Ticker
 }
 
@@ -40,40 +37,40 @@ func (d *ProgResponse) Write(p []byte) (int, error) {
 	select {
 	case <-d.ticker.C:
 		// send progress to channel every second\
-		d.prog.Send(helpers.DownloadStage, int(d.downloaded/d.total*100))
+		d.progress.Send(helpers.DownloadStage, int(d.downloaded/d.total*100))
 	default:
 	}
 	return n, nil
 }
 
-func DownloadFile(entity *ConvertEntity) error {
+func SaveFileFromURL(entity *ConvertEntity) error {
 	out, err := os.Create(entity.inputTempFile)
 	if err != nil {
-		logger.Println(err)
+		helpers.Logger.Println(err)
 		return err
 	}
 
 	resp, err := http.Get(entity.DownloadURL)
 	if err != nil {
-		logger.Println(ErrPullFile)
+		helpers.Logger.Println(ErrPullFile)
 		return ErrPullFile
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		logger.Println(ErrNetDownloadFile)
+		helpers.Logger.Println(ErrNetDownloadFile)
 		return ErrNetDownloadFile
 	}
 
 	progResponse := &ProgResponse{
-		total:  float64(resp.ContentLength),
-		prog:   entity.prog,
-		ticker: time.NewTicker(timerInterval),
+		total:    float64(resp.ContentLength),
+		progress: entity.prog,
+		ticker:   time.NewTicker(timerInterval),
 	}
 	defer progResponse.ticker.Stop()
 	teeReader := io.TeeReader(resp.Body, progResponse)
 	if _, err := io.Copy(out, teeReader); err != nil {
-		logger.Println(ErrSaveToStorage)
+		helpers.Logger.Println(ErrSaveToStorage)
 		return ErrSaveToStorage
 	}
 

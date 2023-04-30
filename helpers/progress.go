@@ -16,7 +16,6 @@ type Payload struct {
 }
 
 func (p *Progress) Send(stage Stage, prog int) {
-
 	p.Ch <- Payload{
 		Stage:  stage,
 		Prog:   prog,

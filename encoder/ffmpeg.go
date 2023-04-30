@@ -9,10 +9,9 @@ import (
 	"strconv"
 	"strings"
 
+	cfg "3205.team/go-mp3-converter/cfg"
 	"3205.team/go-mp3-converter/helpers"
 )
-
-const FFMPEG_BIN = "./bin/ffmpeg"
 
 var Errffmpeg = errors.New("can't convert file to mp3")
 
@@ -38,7 +37,7 @@ func (f *ffmpeg) Run() error {
 		"-y", "-map", "0:a:0", "-acodec", "libmp3lame", "-q:a", "1", "-f", "mp3", "-progress", "pipe:1",
 		f.outputFile}
 
-	cmd := exec.Command(FFMPEG_BIN, args...)
+	cmd := exec.Command(cfg.AppConfig.FfmpegbinPath, args...)
 	ffmpegStdout, err := cmd.StdoutPipe()
 
 	if err != nil {

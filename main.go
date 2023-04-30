@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"3205.team/go-mp3-converter/api"
 	"3205.team/go-mp3-converter/handlers"
 	"3205.team/go-mp3-converter/internal"
 	"github.com/fasthttp/router"
@@ -18,9 +19,9 @@ var (
 
 func main() {
 	os.Mkdir(internal.TEMP_DIR, os.ModePerm)
-
 	flag.Parse()
 
+	api.NewRedisAPI().Init()
 	// h := requestHandler
 	// if *compress {
 	// 	h = fasthttp.CompressHandler(h)
