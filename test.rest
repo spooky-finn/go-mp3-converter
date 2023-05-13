@@ -16,11 +16,19 @@ POST http://localhost:8080/api/mp3convert HTTP/1.1
 content-type: application/json
 
 {
-    "url": "https://rr1---sn-xguxaxjvh-bvwl.googlevideo.com/videoplayback?expire=1683312331&ei=a_pUZLP_HsyJv_IP_ti-2Ak&ip=95.79.139.123&id=o-AB6VDqLlzzvejCfdxHrK01aNrJshUWNSqbBA4hKcDyIL&itag=18&source=youtube&requiressl=yes&mh=NI&mm=31%2C29&mn=sn-xguxaxjvh-bvwl%2Csn-n8v7znsd&ms=au%2Crdu&mv=m&mvi=1&pl=26&gcr=ru&initcwndbps=1922500&spc=qEK7B0jxs8KY8O9AMt27xw3P_533nMyiMnZEpv4FHA&vprv=1&svpuc=1&mime=video%2Fmp4&ns=KX2PD533eSjkPd8OvK9Et84N&cnr=14&ratebypass=yes&dur=227.741&lmt=1658857839311244&mt=1683290243&fvip=6&fexp=24007246&c=WEB&txp=2318224&n=YdrpYEmj_SpzFA&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cgcr%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Cns%2Ccnr%2Cratebypass%2Cdur%2Clmt&lsparams=mh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Cinitcwndbps&lsig=AG3C_xAwRAIgQWAtASS5FpLCYvsJKvOLPmCrc0eD6QFllGYCNoUMgMsCIBA1OsGFID_MSi0C760HtiRkFcKjUThV2-6zuoLaLlLE&sig=AOq0QJ8wRgIhALbOC2et0poiTZUzOppheqGGoc6fhIlN7WNOKsE3tkOoAiEAmguC6otjsktswr5hEZZ236Si8ri2VvtD2uhBKHAckLw%3D"
+    "originalUrl": "https://www.youtube.com/watch?v=jJHhXaWwM7Y&t=48s&ab_channel=ProgrammingPercy",
+    "url": "https://rr3---sn-2uuxa3vh-cqvl.googlevideo.com/videoplayback?expire=1683998147&ei=Y3FfZKftCd7krtoPnMC72As&ip=2001%3A448a%3A302f%3A1bbc%3A4965%3A8ae8%3A9eb3%3Adafd&id=o-ABLs5qyHoxGHVt5NKYggsvNT0I1yQRU_Bc7oR04EtUhi&itag=18&source=youtube&requiressl=yes&mh=KT&mm=31%2C29&mn=sn-2uuxa3vh-cqvl%2Csn-npoldn7l&ms=au%2Crdu&mv=m&mvi=3&pl=52&initcwndbps=620000&spc=qEK7B5hq2Ssd8GWGNEafooyQEAzvEJpePObKG50_vQ&vprv=1&svpuc=1&mime=video%2Fmp4&ns=7dcXC96nWBQ_-7_Bkhm1jXsN&gir=yes&clen=45916749&ratebypass=yes&dur=1655.722&lmt=1670590975095791&mt=1683976140&fvip=2&fexp=24007246%2C51000012%2C51000023&c=WEB&txp=5319224&n=zlmaK5jhElQ8JA&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Cns%2Cgir%2Cclen%2Cratebypass%2Cdur%2Clmt&sig=AOq0QJ8wRgIhAMuEDSOVhduosREcXvH5QtORrwoUhNsmzN4Ym6j1LsejAiEA_8ztc0-_2_w1maHkLE8q7k7dwEjR0YDGy7L28ujI4l8%3D&lsparams=mh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Cinitcwndbps&lsig=AG3C_xAwRgIhAPD26EYhX3bTjPhRvk1SBANVSwU_z504wDVoAZnDJQi5AiEA0xTgg8M1RQgzsTVzP368zLuoj8HCNpIv8vPjtNOzgPc%3D"
 }
 
 
 ###
 // REUQEST STATIC
-GET http://localhost:8080/api/download/1682248062572835400.1212.sad HTTP/1.1
+GET http://localhost:8080/api/download/63c54132da986b84194679b4.1212.sad HTTP/1.1
 content-type: application/json
+
+
+{   
+    "taskName": "firsttask",
+    "sourceUrl": "url", 
+    "url": "http://distribution.bbb3d.renderfarming.net/video/mp4/bbb_sunflower_1080p_30fps_normal.mp4"
+}

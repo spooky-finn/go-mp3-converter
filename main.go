@@ -2,13 +2,15 @@ package main
 
 import (
 	"flag"
-	"log"
 	"os"
 
-	"3205.team/go-mp3-converter/handlers"
-	"3205.team/go-mp3-converter/internal"
-	"github.com/fasthttp/router"
-	"github.com/valyala/fasthttp"
+	"3205.team/go-mp3-converter/cfg"
+	"3205.team/go-mp3-converter/pkg"
+
+	"3205.team/go-mp3-converter/infra/redisscheduler"
+	"3205.team/go-mp3-converter/infra/rest"
+
+	"github.com/joho/godotenv"
 )
 
 var (
@@ -17,31 +19,33 @@ var (
 )
 
 func main() {
-	os.Mkdir(internal.TEMP_DIR, os.ModePerm)
-
+	os.Mkdir(cfg.AppConfig.TempDir, os.ModePerm)
 	flag.Parse()
+
+	err := godotenv.Load(".env")
+	if err != nil {
+		pkg.Logger.Fatalf("Error loading .env file: %v", err)
+	}
+
+	checkBinaryExists()
+
+	// init infrastructures
+	redisscheduler.NewRedisScheduler()
+	rest.NewRESTServer(addr)
 
 	// h := requestHandler
 	// if *compress {
 	// 	h = fasthttp.CompressHandler(h)
 	// }
-	router := router.New()
+	select {}
+}
 
-	router.GET("/health", handlers.HandleHealth)
-
-	router.POST("/api/mp3convert", handlers.HandleConvertToMP3)
-
-	router.GET("/api/download/{params}", handlers.HandleDownload)
-
-	server := &fasthttp.Server{
-		Handler: func() fasthttp.RequestHandler {
-			log.Printf("server ready to handle request at: %s", *addr)
-			return router.Handler
-		}(),
-		IdleTimeout: 10000,
+func checkBinaryExists() {
+	// check if ffmpeg and ffprobe binaries present in directory
+	if _, err := os.Stat(cfg.AppConfig.FfmpegbinPath); os.IsNotExist(err) {
+		panic("ffmpeg binary not found")
 	}
-
-	if err := server.ListenAndServe(*addr); err != nil {
-		log.Fatalf("Error in ListenAndServe: %v", err)
+	if _, err := os.Stat(cfg.AppConfig.FfprobebinPath); os.IsNotExist(err) {
+		panic("ffprobe binary not found")
 	}
 }
