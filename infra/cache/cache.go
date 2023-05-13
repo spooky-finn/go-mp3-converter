@@ -23,7 +23,6 @@ type Cache struct {
 }
 
 func NewCache() *Cache {
-
 	return &Cache{
 		client:       pkg.GetRedisClient(),
 		ttl:          1 * time.Hour,

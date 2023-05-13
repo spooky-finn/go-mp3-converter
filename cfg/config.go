@@ -28,9 +28,16 @@ type ConfigType struct {
 	LinkURL string
 }
 
+func crossPlatformBinary(path string) string {
+	if os.PathSeparator == '\\' {
+		return path + ".exe"
+	}
+	return path
+}
+
 var AppConfig = &ConfigType{
-	FfmpegbinPath:    "./bin/ffmpeg",
-	FfprobebinPath:   "./bin/ffprobe",
+	FfmpegbinPath:    crossPlatformBinary("./bin/ffmpeg"),
+	FfprobebinPath:   crossPlatformBinary("./bin/ffprobe"),
 	TempDir:          "./tmp",
 	ProgressInterval: time.Second * 1,
 	FileTTL:          time.Minute * 15,

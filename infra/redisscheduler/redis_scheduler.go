@@ -23,7 +23,7 @@ func NewRedisScheduler() *RedisScheduler {
 
 func (r *RedisScheduler) init() {
 	pooler := NewPooler(r.client)
-	handler := NewHandler()
+	taskhandler := NewHandler()
 
 	go func() {
 		for request := range pooler.Ch {
@@ -38,7 +38,7 @@ func (r *RedisScheduler) init() {
 				}
 			}()
 
-			err := handler.Handle(task)
+			err := taskhandler.Handle(task)
 			if err != nil {
 				if errors.Is(err, ErrQueueTimeout) {
 					pkg.Logger.Println("queue timeout elapsed")
