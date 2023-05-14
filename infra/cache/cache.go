@@ -34,7 +34,7 @@ func getKey(ID string) string {
 	return cfg.AppConfig.Rdb.TaskTable + "." + ID
 }
 
-func (c *Cache) getEntryByKey(key string) *entity.Task {
+func (c *Cache) getTaskByKey(key string) *entity.Task {
 	buf, err := c.client.Get(ctx, key).Bytes()
 	if err == rdriver.Nil {
 		return nil
@@ -50,20 +50,20 @@ func (c *Cache) getEntryByKey(key string) *entity.Task {
 	return ce
 }
 
-func (c *Cache) Get(ID string) *entity.Task {
+func (c *Cache) GetTask(ID string) *entity.Task {
 	if c.disableCache {
 		return nil
 	}
-	return c.getEntryByKey(getKey(ID))
+	return c.getTaskByKey(getKey(ID))
 }
 
-func (c *Cache) Set(ce *entity.Task) {
-	buf, err := json.Marshal(ce)
+func (c *Cache) SetTask(task *entity.Task) {
+	buf, err := json.Marshal(task)
 	if err != nil {
 		panic(err)
 	}
 
-	if err := c.client.Set(ctx, getKey(ce.ID), buf, c.ttl).Err(); err != nil {
+	if err := c.client.Set(ctx, getKey(task.ID), buf, c.ttl).Err(); err != nil {
 		panic(err)
 	}
 }

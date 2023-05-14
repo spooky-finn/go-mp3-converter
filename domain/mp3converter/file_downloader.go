@@ -1,7 +1,6 @@
-package converter
+package mp3converter
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -57,7 +56,7 @@ func SaveFileFromURL(task *entity.Task, fileManager *FileManager) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.New(fmt.Sprintf("response status is not ok: %d", resp.StatusCode))
+		return fmt.Errorf("response status is not ok: %d", resp.StatusCode)
 	}
 
 	progResponse := NewDownloadProgWatcher(resp.ContentLength, task.Progress)

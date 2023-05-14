@@ -1,4 +1,4 @@
-package converter
+package mp3converter
 
 import (
 	"fmt"
@@ -22,6 +22,7 @@ type FileManager struct {
 	FilePaths
 }
 
+// filename - is a unique identifier of task's associated files without extension
 func NewFileManager(tempDir string, filename string) *FileManager {
 	return &FileManager{
 		FilePaths: FilePaths{

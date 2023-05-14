@@ -4,12 +4,13 @@ import (
 	"errors"
 	"time"
 
+	"3205.team/go-mp3-converter/entity"
 	"3205.team/go-mp3-converter/pkg"
 
-	"3205.team/go-mp3-converter/domain/converter"
+	"3205.team/go-mp3-converter/domain/mp3converter"
 
-	"3205.team/go-mp3-converter/entity"
-	link "3205.team/go-mp3-converter/infra/webapi"
+	"3205.team/go-mp3-converter/infra/cache"
+	link "3205.team/go-mp3-converter/infra/microservice"
 )
 
 var (
@@ -49,33 +50,37 @@ type Request struct {
 
 type Handler struct {
 	QueueTimeout int64
+	mp3useCase   mp3converter.MP3ConverterUseCase
 }
 
 func NewHandler() *Handler {
+	cache := cache.NewCache()
 	return &Handler{
 		QueueTimeout: 3600,
+		mp3useCase:   *mp3converter.New(cache),
 	}
 }
 
-func (th *Handler) Handle(task *entity.Task) error {
+// send request to the link microservice to get a link to download the video
+// and start convertation
+func (th *Handler) Handle(r *Request) (*entity.Task, error) {
 	// check that from the moment of adding the task to the queue, the time has not expired
-	if time.Now().Unix()-task.PushedAt > th.QueueTimeout {
-		return ErrQueueTimeout
+	if time.Now().Unix()-r.PushedAt > th.QueueTimeout {
+		return nil, ErrQueueTimeout
 	}
 
-	linkResp, err := link.Fetch(task.OriginalURL)
+	linkResp, err := link.Fetch(r.OriginalURL)
 	if err != nil {
 		pkg.Logger.Println("fetch error: ", err)
-		return err
+		return nil, err
 	}
+
+	task := th.mp3useCase.StartConvertation(mp3converter.ConverterParams{
+		OriginalURL: r.OriginalURL,
+	})
 
 	task.DownloadURL = linkResp.DownloadURL
 	task.Thumb = linkResp.Thumb
 
-	if err = converter.Run(task); err != nil {
-		pkg.Logger.Println("converter error: ", err)
-		return err
-	}
-
-	return nil
+	return task, nil
 }

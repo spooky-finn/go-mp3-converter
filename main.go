@@ -7,8 +7,8 @@ import (
 	"3205.team/go-mp3-converter/cfg"
 	"3205.team/go-mp3-converter/pkg"
 
+	"3205.team/go-mp3-converter/infra/http"
 	"3205.team/go-mp3-converter/infra/redisscheduler"
-	"3205.team/go-mp3-converter/infra/rest"
 
 	"github.com/joho/godotenv"
 )
@@ -31,7 +31,7 @@ func main() {
 
 	// init infrastructures
 	redisscheduler.NewRedisScheduler()
-	rest.NewRESTServer(addr)
+	http.NewRESTServer(addr)
 
 	// h := requestHandler
 	// if *compress {

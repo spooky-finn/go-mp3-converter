@@ -1,4 +1,4 @@
-package rest
+package http
 
 import (
 	"bufio"
@@ -7,11 +7,9 @@ import (
 	"strings"
 
 	"3205.team/go-mp3-converter/cfg"
-	"3205.team/go-mp3-converter/domain/converter"
-	"3205.team/go-mp3-converter/entity"
+	"3205.team/go-mp3-converter/domain/mp3converter"
 	"3205.team/go-mp3-converter/infra/cache"
 	"3205.team/go-mp3-converter/pkg"
-
 	"github.com/go-playground/validator/v10"
 	"github.com/valyala/fasthttp"
 )
@@ -42,7 +40,6 @@ func HandleConvertToMP3(ctx *fasthttp.RequestCtx) {
 	ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
 	ctx.Response.Header.Set("Access-Control-Allow-Headers", "Cache-Control")
 	ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
-	resultchan := make(chan HandleConvertToMP3Result)
 	var indata HandleConvertToMP3Req
 
 	err := json.Unmarshal(ctx.Request.Body(), &indata)
@@ -56,16 +53,19 @@ func HandleConvertToMP3(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	task := entity.NewTask(entity.NewTaskParams{
+	pkg.Logger.Printf("new request for convertation from %s \n", ctx.RemoteAddr())
+	cache := cache.NewCache()
+	useCase := mp3converter.New(cache)
+
+	task := useCase.StartConvertation(mp3converter.ConverterParams{
 		OriginalURL: indata.OriginalURL,
 		DownloadURL: indata.DownloadURL,
 	})
 
-	pkg.Logger.Printf("new request for convertation from %s \n", ctx.RemoteAddr())
 	ctx.SetBodyStreamWriter(fasthttp.StreamWriter(func(w *bufio.Writer) {
 		for loop := true; loop; {
 			select {
-			case result := <-resultchan:
+			case result := <-task.Done:
 				buf, err := json.Marshal(result)
 				if err != nil {
 					panic(err)
@@ -94,31 +94,6 @@ func HandleConvertToMP3(ctx *fasthttp.RequestCtx) {
 
 		}
 	}))
-
-	go func() {
-		cache := cache.NewCache()
-		cachedTask := cache.Get(task.ID)
-		if cachedTask != nil {
-			resultchan <- HandleConvertToMP3Result{
-				Filename: cachedTask.ID,
-				Status:   "ok",
-			}
-			return
-		}
-
-		err = converter.Run(task)
-		if err != nil {
-			resultchan <- HandleConvertToMP3Result{
-				Status: "error",
-			}
-			return
-		}
-		resultchan <- HandleConvertToMP3Result{
-			Filename: task.ID,
-			Status:   "ok",
-		}
-		cache.Set(task)
-	}()
 }
 
 // WIP

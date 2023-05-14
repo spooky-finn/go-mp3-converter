@@ -35,24 +35,25 @@ func NewPooler(client *rdriver.Client) *Pooler {
 		Ch:     make(chan *Request),
 	}
 
-	// run getTask in goroutine periodically every 50ms
-	// and send task to channel
-	go func() {
-		defer p.client.Close()
-		for {
-			<-time.After(cfg.AppConfig.Rdb.PoolInterval)
-			task, err := p.pool()
-			if err != nil {
-				if errors.Is(err, &json.UnmarshalTypeError{}) {
-					panic(err)
-				}
-				continue
-			}
-			p.Ch <- task
-		}
-	}()
-
+	go p.periodicallPuller()
 	return p
+}
+
+// run getTask in goroutine periodically every "PoolInterval"ms
+// and send task to channel
+func (p *Pooler) periodicallPuller() {
+	defer p.client.Close()
+	for {
+		<-time.After(cfg.AppConfig.Rdb.PoolInterval)
+		task, err := p.pool()
+		if err != nil {
+			if errors.Is(err, &json.UnmarshalTypeError{}) {
+				panic(err)
+			}
+			continue
+		}
+		p.Ch <- task
+	}
 }
 
 func (p *Pooler) pool() (*Request, error) {
