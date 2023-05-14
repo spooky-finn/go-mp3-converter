@@ -20,16 +20,14 @@ func NewRedisScheduler() *RedisScheduler {
 		pooler:      NewPooler(redisclient),
 		pusher:      NewPusher(redisclient),
 	}
-	rs.init()
+	go rs.init()
 	return rs
 }
 
 func (r *RedisScheduler) init() {
 	for request := range r.pooler.Ch {
-		println("new request")
 		go r.handleIncomingRequest(request)
 	}
-
 }
 
 func (r *RedisScheduler) handleIncomingRequest(request *Request) {
@@ -42,6 +40,15 @@ func (r *RedisScheduler) handleIncomingRequest(request *Request) {
 		}
 	}
 
-	<-task.Done
-	r.pusher.Push(task, 0)
+	for {
+		select {
+		case <-task.Done:
+			r.pusher.PushTask(task, 0)
+			return
+		case <-task.Progress.Ch:
+			pkg.Logger.Println("task progress updated")
+			continue
+		}
+	}
+
 }

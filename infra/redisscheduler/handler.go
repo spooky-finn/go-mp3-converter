@@ -50,14 +50,14 @@ type Request struct {
 
 type Handler struct {
 	QueueTimeout int64
-	mp3useCase   mp3converter.MP3ConverterUseCase
+	mp3useCase   *mp3converter.MP3ConverterUseCase
 }
 
 func NewHandler() *Handler {
 	cache := cache.NewCache()
 	return &Handler{
 		QueueTimeout: 3600,
-		mp3useCase:   *mp3converter.New(cache),
+		mp3useCase:   mp3converter.New(cache),
 	}
 }
 
@@ -75,12 +75,10 @@ func (th *Handler) Handle(r *Request) (*entity.Task, error) {
 		return nil, err
 	}
 
-	task := th.mp3useCase.StartConvertation(mp3converter.ConverterParams{
+	task := th.mp3useCase.StartConvertation(entity.NewTaskParams{
 		OriginalURL: r.OriginalURL,
+		DownloadURL: linkResp.DownloadURL,
+		Thumb:       linkResp.Thumb,
 	})
-
-	task.DownloadURL = linkResp.DownloadURL
-	task.Thumb = linkResp.Thumb
-
 	return task, nil
 }

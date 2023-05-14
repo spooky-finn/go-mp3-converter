@@ -34,12 +34,14 @@ type Task struct {
 	err error `json:"-"`
 
 	// a channel that will be closed when convertation is done
-	Done chan struct{} `json:"-"`
+	Done      chan struct{} `json:"-"`
+	WasCached bool          `json:"-"`
 }
 
 type NewTaskParams struct {
 	OriginalURL string
 	DownloadURL string
+	Thumb       string
 }
 
 func NewTask(params NewTaskParams) *Task {
@@ -54,6 +56,8 @@ func NewTask(params NewTaskParams) *Task {
 		OriginalURL: params.OriginalURL,
 		Status:      StatusNew,
 		DownloadURL: params.DownloadURL,
+		Thumb:       params.Thumb,
+		Done:        make(chan struct{}),
 	}
 }
 

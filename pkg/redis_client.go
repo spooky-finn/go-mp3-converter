@@ -15,7 +15,7 @@ func GetRedisClient() *rdriver.Client {
 		return redisClient
 	}
 	addr := fmt.Sprintf("%s:%d", cfg.AppConfig.Rdb.Host, cfg.AppConfig.Rdb.Port)
-	return rdriver.NewClient(
+	c := rdriver.NewClient(
 		&rdriver.Options{
 			Addr:     addr,
 			Password: "", // no password set
@@ -27,4 +27,12 @@ func GetRedisClient() *rdriver.Client {
 				return nil
 			},
 		})
+
+	_, err := c.Ping(context.Background()).Result()
+	if err != nil {
+		Logger.Panicf("failed to connect to the redis: %v:", err)
+	}
+
+	redisClient = c
+	return c
 }

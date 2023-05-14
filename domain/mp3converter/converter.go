@@ -16,11 +16,6 @@ type TaskCacher interface {
 	SetTask(t *entity.Task)
 }
 
-type ConverterParams struct {
-	DownloadURL string
-	OriginalURL string
-}
-
 type MP3ConverterUseCase struct {
 	cache TaskCacher
 }
@@ -32,21 +27,18 @@ func New(cache TaskCacher) *MP3ConverterUseCase {
 }
 
 // Starts convertation, but returns pointer of the task almost immediately
-func (uc *MP3ConverterUseCase) StartConvertation(p ConverterParams) *entity.Task {
-	t := entity.NewTask(entity.NewTaskParams{
-		OriginalURL: p.OriginalURL,
-		DownloadURL: p.DownloadURL,
-	})
-	t.Status = entity.StatusProgress
-	t.StartAt = time.Now().Unix()
+func (uc *MP3ConverterUseCase) StartConvertation(p entity.NewTaskParams) *entity.Task {
+	task := entity.NewTask(p)
+	task.Status = entity.StatusProgress
+	task.StartAt = time.Now().Unix()
 
-	cachedTask := uc.cache.GetTask(t.ID)
+	cachedTask := uc.cache.GetTask(task.ID)
 	if cachedTask != nil {
 		return cachedTask
 	}
 
-	go uc.convert(t)
-	return t
+	go uc.convert(task)
+	return task
 }
 
 func (uc *MP3ConverterUseCase) convert(t *entity.Task) {

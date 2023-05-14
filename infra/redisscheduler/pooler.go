@@ -45,14 +45,14 @@ func (p *Pooler) periodicallPuller() {
 	defer p.client.Close()
 	for {
 		<-time.After(cfg.AppConfig.Rdb.PoolInterval)
-		task, err := p.pool()
+		request, err := p.pool()
 		if err != nil {
 			if errors.Is(err, &json.UnmarshalTypeError{}) {
 				panic(err)
 			}
 			continue
 		}
-		p.Ch <- task
+		p.Ch <- request
 	}
 }
 
@@ -62,12 +62,12 @@ func (p *Pooler) pool() (*Request, error) {
 		return NullTask, err
 	}
 
-	task := &Request{}
-	err := json.Unmarshal([]byte(j.Val()), task)
+	request := &Request{}
+	err := json.Unmarshal([]byte(j.Val()), request)
 	if err != nil {
 		return NullTask, err
 	}
 
-	task.Status = StatusNew
-	return task, nil
+	request.Status = StatusNew
+	return request, nil
 }

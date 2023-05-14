@@ -8,6 +8,7 @@ import (
 
 	"3205.team/go-mp3-converter/cfg"
 	"3205.team/go-mp3-converter/domain/mp3converter"
+	"3205.team/go-mp3-converter/entity"
 	"3205.team/go-mp3-converter/infra/cache"
 	"3205.team/go-mp3-converter/pkg"
 	"github.com/go-playground/validator/v10"
@@ -57,7 +58,7 @@ func HandleConvertToMP3(ctx *fasthttp.RequestCtx) {
 	cache := cache.NewCache()
 	useCase := mp3converter.New(cache)
 
-	task := useCase.StartConvertation(mp3converter.ConverterParams{
+	task := useCase.StartConvertation(entity.NewTaskParams{
 		OriginalURL: indata.OriginalURL,
 		DownloadURL: indata.DownloadURL,
 	})

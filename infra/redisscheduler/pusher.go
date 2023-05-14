@@ -22,12 +22,25 @@ func NewPusher(client *rdriver.Client) *Pusher {
 	}
 }
 
-func (p *Pusher) Push(task *entity.Task, expiration time.Duration) {
-	key := fmt.Sprintf("%s:%s", cfg.AppConfig.Rdb.TaskTable, task.ID)
+func getKey(ID string) string {
+	return fmt.Sprintf("%s:%s", cfg.AppConfig.Rdb.TaskTable, ID)
+}
+
+func (p *Pusher) PushTask(task *entity.Task, expiration time.Duration) {
 	buf, err := json.Marshal(task)
 	if err != nil {
 		panic(err)
 	}
 
-	p.client.Set(ctx, key, buf, expiration)
+	p.client.Set(ctx, getKey(task.ID), buf, expiration)
+}
+
+// write a function to update task
+func (p *Pusher) UpdateTask(task *entity.Task, expiration time.Duration) {
+	buf, err := json.Marshal(task)
+	if err != nil {
+		panic(err)
+	}
+
+	p.client.Set(ctx, getKey(task.ID), buf, expiration)
 }
