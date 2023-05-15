@@ -46,10 +46,8 @@ func (c *Cache) getTaskByKey(key string) *entity.Task {
 	if err := json.Unmarshal(buf, task); err != nil {
 		panic(err)
 	}
-	task.Progress = pkg.NewProg()
-	task.WasCached = true
-	task.Done = make(chan struct{})
 
+	task.WasCached = true
 	return task
 }
 

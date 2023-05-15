@@ -5,10 +5,12 @@ import (
 	"os"
 
 	"3205.team/go-mp3-converter/cfg"
+	"3205.team/go-mp3-converter/domain/mp3converter"
+	"3205.team/go-mp3-converter/infra/cache"
 	"3205.team/go-mp3-converter/pkg"
 
-	"3205.team/go-mp3-converter/infra/http"
-	"3205.team/go-mp3-converter/infra/redisscheduler"
+	"3205.team/go-mp3-converter/application/http"
+	"3205.team/go-mp3-converter/application/redisscheduler"
 
 	"github.com/joho/godotenv"
 )
@@ -30,8 +32,12 @@ func main() {
 	checkBinaryExists()
 
 	// init infrastructures
-	redisscheduler.NewRedisScheduler()
-	http.NewRESTServer(addr)
+	redisClient := pkg.GetRedisClient()
+	cache := cache.NewCache()
+	mp3converter := mp3converter.New(cache)
+
+	redisscheduler.NewRedisScheduler(redisClient, mp3converter, cache)
+	http.NewHTTPServer(addr, mp3converter)
 
 	// h := requestHandler
 	// if *compress {

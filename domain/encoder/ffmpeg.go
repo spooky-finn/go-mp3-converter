@@ -9,8 +9,9 @@ import (
 	"strconv"
 	"strings"
 
+	"3205.team/go-mp3-converter/application/progress"
 	cfg "3205.team/go-mp3-converter/cfg"
-	"3205.team/go-mp3-converter/pkg"
+	"3205.team/go-mp3-converter/domain"
 )
 
 var Errffmpeg = errors.New("can't convert file to mp3")
@@ -19,7 +20,7 @@ type Ffmpeg struct {
 	InputFile  string
 	OutputFile string
 	VideoDur   float64
-	Prog       *pkg.Progress
+	Prog       domain.Progress
 }
 
 func (f *Ffmpeg) Run() error {
@@ -56,7 +57,7 @@ func (f *Ffmpeg) observeProgress(stdout io.ReadCloser) {
 			if err != nil {
 				panic(err)
 			}
-			f.Prog.Send(pkg.ConvertStage, int((t/1000000/f.VideoDur)*100))
+			f.Prog.Send(progress.ConvertStage, int((t/1000000/f.VideoDur)*100))
 		}
 	}
 }

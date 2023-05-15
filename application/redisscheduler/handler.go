@@ -4,12 +4,12 @@ import (
 	"errors"
 	"time"
 
+	"3205.team/go-mp3-converter/application/progress"
 	"3205.team/go-mp3-converter/entity"
 	"3205.team/go-mp3-converter/pkg"
 
 	"3205.team/go-mp3-converter/domain/mp3converter"
 
-	"3205.team/go-mp3-converter/infra/cache"
 	link "3205.team/go-mp3-converter/infra/microservice"
 )
 
@@ -50,20 +50,19 @@ type Request struct {
 
 type Handler struct {
 	QueueTimeout int64
-	mp3useCase   *mp3converter.MP3ConverterUseCase
+	mp3Converter *mp3converter.MP3Converter
 }
 
-func NewHandler() *Handler {
-	cache := cache.NewCache()
+func NewHandler(mp3Converter *mp3converter.MP3Converter) *Handler {
 	return &Handler{
 		QueueTimeout: 3600,
-		mp3useCase:   mp3converter.New(cache),
+		mp3Converter: mp3Converter,
 	}
 }
 
 // send request to the link microservice to get a link to download the video
 // and start convertation
-func (th *Handler) Handle(r *Request) (*entity.Task, error) {
+func (th *Handler) Handle(r *Request, prog *progress.Progress) (*entity.Task, error) {
 	// check that from the moment of adding the task to the queue, the time has not expired
 	if time.Now().Unix()-r.PushedAt > th.QueueTimeout {
 		return nil, ErrQueueTimeout
@@ -75,10 +74,10 @@ func (th *Handler) Handle(r *Request) (*entity.Task, error) {
 		return nil, err
 	}
 
-	task := th.mp3useCase.StartConvertation(entity.NewTaskParams{
+	task := th.mp3Converter.StartConvertation(entity.NewTaskParams{
 		OriginalURL: r.OriginalURL,
 		DownloadURL: linkResp.DownloadURL,
 		Thumb:       linkResp.Thumb,
-	})
+	}, prog)
 	return task, nil
 }

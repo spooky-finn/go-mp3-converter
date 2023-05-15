@@ -6,18 +6,13 @@ import (
 	"fmt"
 	"strings"
 
+	"3205.team/go-mp3-converter/application/progress"
 	"3205.team/go-mp3-converter/cfg"
-	"3205.team/go-mp3-converter/domain/mp3converter"
 	"3205.team/go-mp3-converter/entity"
-	"3205.team/go-mp3-converter/infra/cache"
 	"3205.team/go-mp3-converter/pkg"
 	"github.com/go-playground/validator/v10"
 	"github.com/valyala/fasthttp"
 )
-
-func HandleHealth(ctx *fasthttp.RequestCtx) {
-	ctx.WriteString("ok")
-}
 
 type HandleConvertToMP3Req struct {
 	// a direct url to the video file
@@ -31,7 +26,7 @@ type HandleConvertToMP3Result struct {
 	Filename string `json:"filename,omitempty"`
 }
 
-func HandleConvertToMP3(ctx *fasthttp.RequestCtx) {
+func (h *HTTPServer) HandleConvertToMP3(ctx *fasthttp.RequestCtx) {
 	pkg.Logger.SetPrefix("rest: ")
 
 	ctx.SetContentType("text/event-stream")
@@ -55,19 +50,23 @@ func HandleConvertToMP3(ctx *fasthttp.RequestCtx) {
 	}
 
 	pkg.Logger.Printf("new request for convertation from %s \n", ctx.RemoteAddr())
-	cache := cache.NewCache()
-	useCase := mp3converter.New(cache)
 
-	task := useCase.StartConvertation(entity.NewTaskParams{
+	prog := progress.New()
+	h.mp3converter.StartConvertation(entity.NewTaskParams{
 		OriginalURL: indata.OriginalURL,
 		DownloadURL: indata.DownloadURL,
-	})
+	}, prog)
 
 	ctx.SetBodyStreamWriter(fasthttp.StreamWriter(func(w *bufio.Writer) {
+		for prog := range prog.Ch {
+
+			pkg.Logger.Printf("prog: %v", prog)
+		}
+
 		for loop := true; loop; {
 			select {
-			case result := <-task.Done:
-				buf, err := json.Marshal(result)
+			case <-prog.Done:
+				buf, err := json.Marshal(prog)
 				if err != nil {
 					panic(err)
 				}
@@ -79,7 +78,7 @@ func HandleConvertToMP3(ctx *fasthttp.RequestCtx) {
 					panic(err)
 				}
 				loop = false
-			case prog, ok := <-task.Progress.Ch:
+			case prog, ok := <-prog.Ch:
 				pkg.Logger.Printf("prog: %v", prog)
 				if !ok {
 					continue
@@ -98,7 +97,7 @@ func HandleConvertToMP3(ctx *fasthttp.RequestCtx) {
 }
 
 // WIP
-func HandleDownload(ctx *fasthttp.RequestCtx) {
+func (h *HTTPServer) HandleDownload(ctx *fasthttp.RequestCtx) {
 	pkg.Logger.SetPrefix("rest: ")
 	params := strings.Split(ctx.UserValue("params").(string), ".")
 
@@ -111,4 +110,8 @@ func HandleDownload(ctx *fasthttp.RequestCtx) {
 
 	pkg.Logger.Printf("new request for download from %s with filename: %s, timestamp: %s, hash: %s \n", ctx.RemoteAddr(), filename, timestamp, hash)
 	fasthttp.ServeFile(ctx, fmt.Sprintf("%s/%s.mp3", cfg.AppConfig.TempDir, filename))
+}
+
+func (h *HTTPServer) HandleHealth(ctx *fasthttp.RequestCtx) {
+	ctx.WriteString("ok")
 }

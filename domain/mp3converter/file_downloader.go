@@ -6,10 +6,9 @@ import (
 	"net/http"
 	"time"
 
+	"3205.team/go-mp3-converter/application/progress"
 	"3205.team/go-mp3-converter/cfg"
-	"3205.team/go-mp3-converter/pkg"
-
-	"3205.team/go-mp3-converter/entity"
+	"3205.team/go-mp3-converter/domain"
 )
 
 // var (
@@ -24,11 +23,11 @@ import (
 type DownloadProgWatcher struct {
 	downloaded float64
 	total      float64
-	progress   *pkg.Progress
+	progress   domain.Progress
 	ticker     *time.Ticker
 }
 
-func NewDownloadProgWatcher(totalBytes int64, progress *pkg.Progress) *DownloadProgWatcher {
+func NewDownloadProgWatcher(totalBytes int64, progress domain.Progress) *DownloadProgWatcher {
 	return &DownloadProgWatcher{
 		total:    float64(totalBytes),
 		progress: progress,
@@ -42,14 +41,14 @@ func (d *DownloadProgWatcher) Write(p []byte) (int, error) {
 	select {
 	case <-d.ticker.C:
 		// send progress to channel every second\
-		d.progress.Send(pkg.DownloadStage, int(d.downloaded/d.total*100))
+		d.progress.Send(progress.DownloadStage, int(d.downloaded/d.total*100))
 	default:
 	}
 	return n, nil
 }
 
-func SaveFileFromURL(task *entity.Task, fileManager *FileManager) error {
-	resp, err := http.Get(task.DownloadURL)
+func SaveFileFromURL(downloadURL string, fileManager *FileManager, prog domain.Progress) error {
+	resp, err := http.Get(downloadURL)
 	if err != nil {
 		return err
 	}
@@ -59,7 +58,7 @@ func SaveFileFromURL(task *entity.Task, fileManager *FileManager) error {
 		return fmt.Errorf("response status is not ok: %d", resp.StatusCode)
 	}
 
-	progResponse := NewDownloadProgWatcher(resp.ContentLength, task.Progress)
+	progResponse := NewDownloadProgWatcher(resp.ContentLength, prog)
 	defer progResponse.ticker.Stop()
 
 	teeReader := io.TeeReader(resp.Body, progResponse)

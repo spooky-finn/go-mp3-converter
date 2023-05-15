@@ -3,22 +3,24 @@ package redisscheduler
 import (
 	"errors"
 
+	"3205.team/go-mp3-converter/application/progress"
+	"3205.team/go-mp3-converter/domain/mp3converter"
+	"3205.team/go-mp3-converter/infra/cache"
 	"3205.team/go-mp3-converter/pkg"
+	"github.com/redis/go-redis/v9"
 )
 
 type RedisScheduler struct {
 	taskhandler *Handler
 	pooler      *Pooler
-	pusher      *Pusher
+	cache       *cache.Cache
 }
 
-func NewRedisScheduler() *RedisScheduler {
-	redisclient := pkg.GetRedisClient()
-
+func NewRedisScheduler(redisclient *redis.Client, mp3converter *mp3converter.MP3Converter, cache *cache.Cache) *RedisScheduler {
 	rs := &RedisScheduler{
-		taskhandler: NewHandler(),
+		taskhandler: NewHandler(mp3converter),
 		pooler:      NewPooler(redisclient),
-		pusher:      NewPusher(redisclient),
+		cache:       cache,
 	}
 	go rs.init()
 	return rs
@@ -31,7 +33,8 @@ func (r *RedisScheduler) init() {
 }
 
 func (r *RedisScheduler) handleIncomingRequest(request *Request) {
-	task, err := r.taskhandler.Handle(request)
+	prog := progress.New()
+	_, err := r.taskhandler.Handle(request, prog)
 	if err != nil {
 		if errors.Is(err, ErrQueueTimeout) {
 			pkg.Logger.Println("queue timeout elapsed")
@@ -40,15 +43,9 @@ func (r *RedisScheduler) handleIncomingRequest(request *Request) {
 		}
 	}
 
-	for {
-		select {
-		case <-task.Done:
-			r.pusher.PushTask(task, 0)
-			return
-		case <-task.Progress.Ch:
-			pkg.Logger.Println("task progress updated")
-			continue
-		}
+	for range prog.Ch {
+		println("progress in redis scheduler")
+		continue
 	}
 
 }

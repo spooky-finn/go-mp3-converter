@@ -9,10 +9,10 @@ import (
 type Status string
 
 const (
-	StatusNew      Status = "new"
-	StatusReady    Status = "ready"
-	StatusError    Status = "error"
-	StatusProgress Status = "in_progress"
+	StatusNew        Status = "new"
+	StatusReady      Status = "ready"
+	StatusError      Status = "error"
+	StatusInProgress Status = "in_progress"
 )
 
 // a main entity that represents a task for convertation to mp3
@@ -21,11 +21,10 @@ type Task struct {
 	// a url to the video (e.g. to the youtube video)
 	OriginalURL string `json:"originalUrl"`
 	// a url issued by Link microservice to download the video
-	DownloadURL string        `json:"downloadUrl"`
-	Status      Status        `json:"status,omitempty"`
-	Progress    *pkg.Progress `json:"-"`
-	Duration    float64       `json:"duration"`
-	Thumb       string        `json:"thumb"`
+	DownloadURL string  `json:"downloadUrl"`
+	Status      Status  `json:"status,omitempty"`
+	Duration    float64 `json:"duration"`
+	Thumb       string  `json:"thumb"`
 
 	PushedAt int64 `json:"pushedAt"`
 	StartAt  int64 `json:"startAt"`
@@ -34,8 +33,7 @@ type Task struct {
 	err error `json:"-"`
 
 	// a channel that will be closed when convertation is done
-	Done      chan struct{} `json:"-"`
-	WasCached bool          `json:"-"`
+	WasCached bool `json:"-"`
 }
 
 type NewTaskParams struct {
@@ -52,12 +50,10 @@ func NewTask(params NewTaskParams) *Task {
 	ID := pkg.Hash(params.OriginalURL)
 	return &Task{
 		ID:          ID,
-		Progress:    pkg.NewProg(),
 		OriginalURL: params.OriginalURL,
 		Status:      StatusNew,
 		DownloadURL: params.DownloadURL,
 		Thumb:       params.Thumb,
-		Done:        make(chan struct{}),
 	}
 }
 
@@ -76,16 +72,9 @@ func (t *Task) Teardown(err error) {
 		pkg.Logger.Printf("task %s: failed with error: %s", t.ID, err)
 		t.err = err
 		t.Status = StatusError
-
 	} else {
 		t.Status = StatusReady
 	}
 
 	t.StopAt = time.Now().Unix()
-	close(t.Done)
-	close(t.Progress.Ch)
-}
-
-func (t *Task) Wait() {
-	<-t.Done
 }

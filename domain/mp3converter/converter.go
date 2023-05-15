@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"3205.team/go-mp3-converter/cfg"
+	"3205.team/go-mp3-converter/domain"
 	"3205.team/go-mp3-converter/domain/encoder"
 	"3205.team/go-mp3-converter/entity"
 )
@@ -16,20 +17,20 @@ type TaskCacher interface {
 	SetTask(t *entity.Task)
 }
 
-type MP3ConverterUseCase struct {
+type MP3Converter struct {
 	cache TaskCacher
 }
 
-func New(cache TaskCacher) *MP3ConverterUseCase {
-	return &MP3ConverterUseCase{
+func New(cache TaskCacher) *MP3Converter {
+	return &MP3Converter{
 		cache: cache,
 	}
 }
 
 // Starts convertation, but returns pointer of the task almost immediately
-func (uc *MP3ConverterUseCase) StartConvertation(p entity.NewTaskParams) *entity.Task {
+func (uc *MP3Converter) StartConvertation(p entity.NewTaskParams, prog domain.Progress) *entity.Task {
 	task := entity.NewTask(p)
-	task.Status = entity.StatusProgress
+	task.Status = entity.StatusInProgress
 	task.StartAt = time.Now().Unix()
 
 	cachedTask := uc.cache.GetTask(task.ID)
@@ -37,15 +38,15 @@ func (uc *MP3ConverterUseCase) StartConvertation(p entity.NewTaskParams) *entity
 		return cachedTask
 	}
 
-	go uc.convert(task)
+	go uc.convert(task, prog)
 	return task
 }
 
-func (uc *MP3ConverterUseCase) convert(t *entity.Task) {
+func (uc *MP3Converter) convert(t *entity.Task, prog domain.Progress) {
 	tempDir := cfg.AppConfig.TempDir
 	fm := NewFileManager(tempDir, t.ID)
 
-	err := SaveFileFromURL(t, fm)
+	err := SaveFileFromURL(t.DownloadURL, fm, prog)
 	if err != nil {
 		t.Teardown(errors.Join(ErrConverter, err))
 		return
@@ -56,14 +57,15 @@ func (uc *MP3ConverterUseCase) convert(t *entity.Task) {
 		InputFile:  fm.Original,
 		OutputFile: fm.Output,
 		VideoDur:   t.Duration,
-		Prog:       t.Progress,
+		Prog:       prog,
 	}
 	if err := ffmpeg.Run(); err != nil {
 		t.Teardown(errors.Join(ErrConverter, err))
 		return
 	}
 
+	t.Teardown(nil)
+
 	uc.cache.SetTask(t)
 	fm.RemoveOriginalFile()
-	t.Teardown(nil)
 }
