@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"3205.team/go-mp3-converter/cfg"
-	"3205.team/go-mp3-converter/pkg"
 
 	"3205.team/go-mp3-converter/entity"
 
@@ -22,16 +21,12 @@ type Cache struct {
 	disableCache bool
 }
 
-func NewCache() *Cache {
+func New(redisClient *rdriver.Client, ttl time.Duration) *Cache {
 	return &Cache{
-		client:       pkg.GetRedisClient(),
-		ttl:          1 * time.Hour,
+		client:       redisClient,
+		ttl:          ttl,
 		disableCache: os.Getenv("DISABLE_CACHE") == "true",
 	}
-}
-
-func getKey(ID string) string {
-	return cfg.AppConfig.Rdb.TaskTable + "." + ID
 }
 
 func (c *Cache) getTaskByKey(key string) *entity.Task {
@@ -56,7 +51,8 @@ func (c *Cache) GetTask(ID string) *entity.Task {
 		return nil
 	}
 
-	task := c.getTaskByKey(getKey(ID))
+	key := cfg.AppConfig.Rdb.GetCachedTaskKey(ID)
+	task := c.getTaskByKey(key)
 
 	if task == nil || task.Status != entity.StatusReady {
 		return nil
@@ -71,7 +67,8 @@ func (c *Cache) SetTask(task *entity.Task) {
 		panic(err)
 	}
 
-	if err := c.client.Set(ctx, getKey(task.ID), buf, c.ttl).Err(); err != nil {
+	key := cfg.AppConfig.Rdb.GetCachedTaskKey(task.ID)
+	if err := c.client.Set(ctx, key, buf, c.ttl).Err(); err != nil {
 		panic(err)
 	}
 }

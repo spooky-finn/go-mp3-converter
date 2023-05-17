@@ -12,6 +12,11 @@ type RedisConfig struct {
 	TaskTable    string
 	QueueTable   string
 	PoolInterval time.Duration
+	TTL          time.Duration
+}
+
+func (rc *RedisConfig) GetCachedTaskKey(ID string) string {
+	return rc.TaskTable + "." + ID
 }
 
 type ConfigType struct {
@@ -47,6 +52,7 @@ var AppConfig = &ConfigType{
 		TaskTable:    "ffmpeg:mp3:task",
 		QueueTable:   "ffmpeg:mp3:queue",
 		PoolInterval: time.Millisecond * 100,
+		TTL:          time.Hour * 1,
 	},
 	LinkURL: os.Getenv("LINK_URL"),
 }
