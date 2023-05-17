@@ -48,7 +48,10 @@ func (d *DownloadProgWatcher) Write(p []byte) (int, error) {
 }
 
 func SaveFileFromURL(downloadURL string, fileManager *FileManager, prog domain.Progress) error {
-	resp, err := http.Get(downloadURL)
+	client := http.Client{
+		Timeout: 15 * time.Minute,
+	}
+	resp, err := client.Get(downloadURL)
 	if err != nil {
 		return err
 	}

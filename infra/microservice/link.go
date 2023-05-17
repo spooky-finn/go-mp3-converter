@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 )
 
 // Link -  is a microservice that is responsible for returning a downloadable url for a video
@@ -32,7 +33,11 @@ func Fetch(url string) (*Result, error) {
 		panic(err)
 	}
 
-	resp, err := http.Post(os.Getenv("LINK_URL"), "application/json", bytes.NewReader(buf))
+	client := http.Client{
+		Timeout: 15 * time.Second,
+	}
+
+	resp, err := client.Post(os.Getenv("LINK_URL"), "application/json", bytes.NewReader(buf))
 	if err != nil {
 		return nil, err
 	}

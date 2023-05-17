@@ -56,7 +56,13 @@ func (c *Cache) GetTask(ID string) *entity.Task {
 		return nil
 	}
 
-	return c.getTaskByKey(getKey(ID))
+	task := c.getTaskByKey(getKey(ID))
+
+	if task == nil || task.Status != entity.StatusReady {
+		return nil
+	}
+
+	return task
 }
 
 func (c *Cache) SetTask(task *entity.Task) {
