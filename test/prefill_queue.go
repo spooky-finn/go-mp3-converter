@@ -12,7 +12,7 @@ import (
 	"3205.team/go-mp3-converter/application/redisscheduler"
 )
 
-var payload = []redisscheduler.Request{
+var payload = []redisscheduler.IncomingTask{
 	{
 		OriginalURL: "https://www.youtube.com/watch?v=UBr3fOBvotc&list=RDUBr3fOBvotc&start_radio=1&ab_channel=Asoon",
 		SourceURL:   "https://www.youtube.com/watch?v=UBr3fOBvotc&list=RDUBr3fOBvotc&start_radio=1&ab_channel=Asoon",

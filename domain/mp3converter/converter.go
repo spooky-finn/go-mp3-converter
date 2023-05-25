@@ -12,19 +12,11 @@ import (
 
 var ErrConverter = errors.New("converter error: ")
 
-type TaskCacher interface {
-	GetTask(ID string) *entity.Task
-	SetTask(t *entity.Task)
-}
-
 type MP3Converter struct {
-	cache TaskCacher
 }
 
-func New(cache TaskCacher) *MP3Converter {
-	return &MP3Converter{
-		cache: cache,
-	}
+func New() *MP3Converter {
+	return &MP3Converter{}
 }
 
 // Starts convertation, but returns pointer of the task almost immediately
@@ -32,11 +24,6 @@ func (uc *MP3Converter) StartConvertation(p entity.NewTaskParams, prog domain.Pr
 	task := entity.NewTask(p)
 	task.Status = entity.StatusInProgress
 	task.StartAt = time.Now().Unix()
-
-	cachedTask := uc.cache.GetTask(task.ID)
-	if cachedTask != nil {
-		return cachedTask
-	}
 
 	go uc.convert(task, prog)
 	return task
@@ -66,6 +53,5 @@ func (uc *MP3Converter) convert(t *entity.Task, prog domain.Progress) {
 
 	t.Teardown(nil)
 
-	uc.cache.SetTask(t)
 	fm.RemoveOriginalFile()
 }

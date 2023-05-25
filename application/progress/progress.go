@@ -1,15 +1,16 @@
 package progress
 
-type Stage string
-
-const DownloadStage Stage = "downloading"
-const ConvertStage Stage = "converting"
-
-type Status string
+type (
+	Stage  string
+	Status string
+)
 
 const (
 	StatusOk    Status = "ok"
 	StatusError Status = "error"
+
+	DownloadStage Stage = "downloading"
+	ConvertStage  Stage = "converting"
 )
 
 type ProgressEventPayload struct {
@@ -61,4 +62,13 @@ func (p *Progress) Listen() <-chan ProgressEventPayload {
 
 func (p *Progress) Wait() <-chan struct{} {
 	return p.Done
+}
+
+func (p *Progress) ToPercentage(progEvent ProgressEventPayload) int {
+	// i have 2 stages is now stge percentage is less than 50
+	if progEvent.Stage == DownloadStage {
+		return progEvent.Prog / 2
+	} else {
+		return progEvent.Prog/2 + 50
+	}
 }

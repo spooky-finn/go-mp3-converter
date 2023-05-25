@@ -22,17 +22,17 @@ const (
 type Pooler struct {
 	table  string
 	client *rdriver.Client
-	Ch     chan *Request
+	Ch     chan *IncomingTask
 }
 
 var ctx = context.Background()
-var NullTask = &Request{}
+var NullTask = &IncomingTask{}
 
 func NewPooler(client *rdriver.Client) *Pooler {
 	p := &Pooler{
 		table:  cfg.AppConfig.Rdb.QueueTable,
 		client: client,
-		Ch:     make(chan *Request),
+		Ch:     make(chan *IncomingTask),
 	}
 
 	go p.periodicallPuller()
@@ -56,18 +56,28 @@ func (p *Pooler) periodicallPuller() {
 	}
 }
 
-func (p *Pooler) pool() (*Request, error) {
+func (p *Pooler) pool() (*IncomingTask, error) {
 	var j = p.client.LPop(ctx, p.table)
 	if err := j.Err(); err != nil {
 		return NullTask, err
 	}
 
-	request := &Request{}
+	request := &IncomingTask{}
 	err := json.Unmarshal([]byte(j.Val()), request)
 	if err != nil {
 		return NullTask, err
 	}
 
-	request.Status = StatusNew
 	return request, nil
+}
+
+func (p *Pooler) Push(task *OutgoingTask, ttl time.Duration) error {
+	b, err := json.Marshal(task)
+	if err != nil {
+		return err
+	}
+
+	key := cfg.AppConfig.Rdb.GetCachedTaskKey(task.Filename)
+
+	return p.client.Set(ctx, key, b, ttl).Err()
 }

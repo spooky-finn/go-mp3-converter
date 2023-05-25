@@ -10,7 +10,7 @@ import (
 
 	"3205.team/go-mp3-converter/domain/mp3converter"
 
-	link "3205.team/go-mp3-converter/infra/microservice"
+	link "3205.team/go-mp3-converter/infra"
 )
 
 var (
@@ -18,9 +18,10 @@ var (
 	ErrQueueTimeout = errors.Join(ErrTaskHandler, errors.New("queue timeout elapsed"))
 )
 
-type OutcomeTask struct {
+type OutgoingTask struct {
 	Progress    int    `json:"progress"`
 	OriginalURL string `json:"originalUrl"`
+	TaskName    string `json:"taskName"`
 	Status      Status `json:"status"`
 	Origin      string `json:"origin"`
 	PushedAt    int64  `json:"pushedAt"`
@@ -37,15 +38,17 @@ type OutcomeTask struct {
 	Duration int     `json:"duration"`
 	Filename string  `json:"filename"`
 	StopAt   float64 `json:"stopAt"`
+	Errormsg string  `json:"errorMsg"`
 }
 
 // incoming task
-type Request struct {
+type IncomingTask struct {
+	TaskName    string `json:"taskName"`
 	OriginalURL string `json:"originalUrl"`
 	// just a url to video on youtube, instgram, etc. Its not a link to download file
 	SourceURL string `json:"url"`
 	PushedAt  int64  `json:"pushedAt"`
-	Status    Status `json:",omitempty"`
+	Origin    string `json:"origin"`
 }
 
 type Handler struct {
@@ -62,7 +65,7 @@ func NewHandler(mp3Converter *mp3converter.MP3Converter) *Handler {
 
 // send request to the link microservice to get a link to download the video
 // and start convertation
-func (th *Handler) Handle(r *Request, prog *progress.Progress) (*entity.Task, error) {
+func (th *Handler) Handle(r *IncomingTask, prog *progress.Progress) (*entity.Task, error) {
 	// check that from the moment of adding the task to the queue, the time has not expired
 	if time.Now().Unix()-r.PushedAt > th.QueueTimeout {
 		return nil, ErrQueueTimeout
