@@ -18,29 +18,6 @@ var (
 	ErrQueueTimeout = errors.Join(ErrTaskHandler, errors.New("queue timeout elapsed"))
 )
 
-type OutgoingTask struct {
-	Progress    int    `json:"progress"`
-	OriginalURL string `json:"originalUrl"`
-	TaskName    string `json:"taskName"`
-	Status      Status `json:"status"`
-	Origin      string `json:"origin"`
-	PushedAt    int64  `json:"pushedAt"`
-	Instance    string `json:"instance"`
-	Meta        struct {
-		Title    string `json:"title"`
-		Source   string `json:"source"`
-		Duration string `json:"duration"`
-		Tags     string `json:"tags"`
-	} `json:"meta"`
-	Thumb    string  `json:"thumb"`
-	FileSize int     `json:"fileSize"`
-	StartAt  float64 `json:"startAt"`
-	Duration int     `json:"duration"`
-	Filename string  `json:"filename"`
-	StopAt   float64 `json:"stopAt"`
-	Errormsg string  `json:"errorMsg"`
-}
-
 // incoming task
 type IncomingTask struct {
 	TaskName    string `json:"taskName"`
@@ -56,6 +33,12 @@ type Handler struct {
 	mp3Converter *mp3converter.MP3Converter
 }
 
+type HadlerResult struct {
+	Task         *entity.Task
+	Err          error
+	LinkResponse *link.LinkResultData
+}
+
 func NewHandler(mp3Converter *mp3converter.MP3Converter) *Handler {
 	return &Handler{
 		QueueTimeout: 3600,
@@ -65,22 +48,30 @@ func NewHandler(mp3Converter *mp3converter.MP3Converter) *Handler {
 
 // send request to the link microservice to get a link to download the video
 // and start convertation
-func (th *Handler) Handle(r *IncomingTask, prog *progress.Progress) (*entity.Task, error) {
+func (th *Handler) Handle(r *IncomingTask, prog *progress.Progress) *HadlerResult {
 	// check that from the moment of adding the task to the queue, the time has not expired
 	if time.Now().Unix()-r.PushedAt > th.QueueTimeout {
-		return nil, ErrQueueTimeout
+		return &HadlerResult{
+			Err: ErrQueueTimeout,
+		}
 	}
 
-	linkResp, err := link.Fetch(r.OriginalURL)
+	linkResponse, err := link.Fetch(r.OriginalURL)
 	if err != nil {
 		pkg.Logger.Println("fetch error: ", err)
-		return nil, err
+		return &HadlerResult{
+			Err: ErrQueueTimeout,
+		}
 	}
 
 	task := th.mp3Converter.StartConvertation(entity.NewTaskParams{
 		OriginalURL: r.OriginalURL,
-		DownloadURL: linkResp.DownloadURL,
-		Thumb:       linkResp.Thumb,
+		DownloadURL: linkResponse.DownloadURL,
+		TaskName:    r.TaskName,
 	}, prog)
-	return task, nil
+
+	return &HadlerResult{
+		Task:         task,
+		LinkResponse: linkResponse,
+	}
 }

@@ -37,12 +37,12 @@ func NewFileManager(tempDir string, filename string) *FileManager {
 func (fm *FileManager) CopyToTempFile(r io.Reader) error {
 	tempFile, err := os.Create(fm.OriginalTemp)
 	if err != nil {
-		pkg.Logger.Fatalln(err)
+		pkg.Logger.Println(err)
 		return err
 	}
 
 	if _, err := io.Copy(tempFile, r); err != nil {
-		pkg.Logger.Fatalln(err)
+		pkg.Logger.Println(err)
 		return err
 	}
 
@@ -57,7 +57,7 @@ func (fm *FileManager) CopyToTempFile(r io.Reader) error {
 func (fm *FileManager) renameTempFileToOriginal() error {
 	err := os.Rename(fm.OriginalTemp, fm.Original)
 	if err != nil {
-		pkg.Logger.Fatalln(err)
+		pkg.Logger.Println(err)
 		return err
 	}
 	return nil
@@ -66,7 +66,7 @@ func (fm *FileManager) renameTempFileToOriginal() error {
 func (fm *FileManager) RemoveOriginalFile() error {
 	err := os.Remove(fm.Original)
 	if err != nil {
-		pkg.Logger.Fatalln(err)
+		pkg.Logger.Println(err)
 		return err
 	}
 
@@ -76,9 +76,26 @@ func (fm *FileManager) RemoveOriginalFile() error {
 func (fm *FileManager) RemoveOutputFile() error {
 	err := os.Remove(fm.Output)
 	if err != nil {
-		pkg.Logger.Fatalln(err)
+		pkg.Logger.Println(err)
 		return err
 	}
 
 	return nil
+}
+
+func (fm *FileManager) OutputFileSize() int64 {
+	file, err := os.Open(fm.Output)
+	if err != nil {
+		pkg.Logger.Println(err)
+		return 0
+	}
+	defer file.Close()
+
+	stat, err := file.Stat()
+	if err != nil {
+		pkg.Logger.Println(err)
+		return 0
+	}
+
+	return stat.Size()
 }

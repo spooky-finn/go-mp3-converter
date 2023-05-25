@@ -10,15 +10,6 @@ import (
 	rdriver "github.com/redis/go-redis/v9"
 )
 
-type Status string
-
-const (
-	StatusNew      Status = "new"
-	StatusReady    Status = "ready"
-	StatusError    Status = "error"
-	StatusProgress Status = "in_progress"
-)
-
 type Pooler struct {
 	table  string
 	client *rdriver.Client
@@ -77,7 +68,7 @@ func (p *Pooler) Push(task *OutgoingTask, ttl time.Duration) error {
 		return err
 	}
 
-	key := cfg.AppConfig.Rdb.GetCachedTaskKey(task.Filename)
+	key := cfg.AppConfig.Rdb.GetCachedTaskKey(task.TaskName)
 
 	return p.client.Set(ctx, key, b, ttl).Err()
 }

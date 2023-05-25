@@ -13,7 +13,7 @@ import (
 // Link -  is a microservice that is responsible for returning a downloadable url for a video
 var ErrLinkEmptyResonse = errors.New("link request error: empty response")
 
-type Result struct {
+type LinkResultData struct {
 	Meta struct {
 		Title  string `json:"title"`
 		Source string `json:"source"`
@@ -27,7 +27,7 @@ type Result struct {
 	DownloadURL string
 }
 
-func Fetch(url string) (*Result, error) {
+func Fetch(url string) (*LinkResultData, error) {
 	buf, err := json.Marshal(map[string]string{"url": url})
 	if err != nil {
 		panic(err)
@@ -51,22 +51,22 @@ func Fetch(url string) (*Result, error) {
 		return nil, err
 	}
 
-	var results Result
-	err = json.Unmarshal(body, &results)
+	var linkData LinkResultData
+	err = json.Unmarshal(body, &linkData)
 	if err != nil {
 		return nil, err
 	}
 
-	downloadURL, err := parseResponse(results)
+	downloadURL, err := parseResponse(linkData)
 	if err != nil {
 		return nil, err
 	}
 
-	results.DownloadURL = downloadURL
-	return &results, nil
+	linkData.DownloadURL = downloadURL
+	return &linkData, nil
 }
 
-func parseResponse(data Result) (string, error) {
+func parseResponse(data LinkResultData) (string, error) {
 	// TODO: Add support audio link
 	for _, result := range data.URL {
 		if !result.IsAudio {

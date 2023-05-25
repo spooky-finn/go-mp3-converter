@@ -51,7 +51,8 @@ func (uc *MP3Converter) convert(t *entity.Task, prog domain.Progress) {
 		return
 	}
 
-	t.Teardown(nil)
+	t.FileSize = fm.OutputFileSize()
 
+	t.Teardown(nil)
 	fm.RemoveOriginalFile()
 }

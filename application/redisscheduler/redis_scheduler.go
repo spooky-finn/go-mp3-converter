@@ -11,6 +11,31 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+type OutgoingTaskMeta struct {
+	Title    string `json:"title"`
+	Source   string `json:"source"`
+	Duration string `json:"duration"`
+	Tags     string `json:"tags"`
+}
+
+type OutgoingTask struct {
+	Progress    int              `json:"progress"`
+	OriginalURL string           `json:"originalUrl"`
+	TaskName    string           `json:"taskName"`
+	Status      entity.Status    `json:"status"`
+	Origin      string           `json:"origin"`
+	PushedAt    int64            `json:"pushedAt"`
+	Instance    string           `json:"instance"`
+	Meta        OutgoingTaskMeta `json:"meta"`
+	Thumb       string           `json:"thumb"`
+	FileSize    int64            `json:"fileSize"`
+	StartAt     int64            `json:"startAt"`
+	Duration    int              `json:"duration"`
+	Filename    string           `json:"filename"`
+	StopAt      int64            `json:"stopAt"`
+	Errormsg    string           `json:"errorMsg"`
+}
+
 type RedisScheduler struct {
 	taskhandler *Handler
 	pooler      *Pooler
@@ -33,18 +58,19 @@ func (r *RedisScheduler) init() {
 
 func (r *RedisScheduler) handleIncomingRequest(request *IncomingTask) {
 	prog := progress.New()
-	task, err := r.taskhandler.Handle(request, prog)
-	if err != nil {
-		if errors.Is(err, ErrQueueTimeout) {
+	result := r.taskhandler.Handle(request, prog)
+
+	if result.Err != nil {
+		if errors.Is(result.Err, ErrQueueTimeout) {
 			pkg.Logger.Println("queue timeout elapsed")
 		} else {
-			panic(err)
+			panic(result.Err)
 		}
 	}
 
-	for range prog.Ch {
+	for prog_event := range prog.Ch {
 		println("progress in redis scheduler")
-		outgoingTask := convertToOutgoingTask(task, *request)
+		outgoingTask := convertToOutgoingTask(result, request, prog_event)
 
 		if err := r.pooler.Push(outgoingTask, 1*time.Hour); err != nil {
 			panic(err)
@@ -54,6 +80,34 @@ func (r *RedisScheduler) handleIncomingRequest(request *IncomingTask) {
 
 }
 
-func convertToOutgoingTask(task *entity.Task, icomingtask IncomingTask) *OutgoingTask {
-	return nil
+func convertToOutgoingTask(result *HadlerResult, request *IncomingTask, prog_event progress.ProgressEventPayload) *OutgoingTask {
+	task := result.Task
+	linkResponse := result.LinkResponse
+
+	// error
+	errorMsg := ""
+	if task.Err != nil {
+		errorMsg = task.Err.Error()
+	}
+
+	return &OutgoingTask{
+		Progress:    prog_event.AggragetedProgress(),
+		OriginalURL: request.OriginalURL,
+		TaskName:    request.TaskName,
+		Origin:      request.Origin,
+		PushedAt:    request.PushedAt,
+		Instance:    "instance",
+		Meta: OutgoingTaskMeta{
+			Title:  linkResponse.Meta.Title,
+			Source: linkResponse.Meta.Source,
+		},
+		Thumb:    linkResponse.Thumb,
+		Status:   task.Status,
+		FileSize: task.FileSize,
+		StartAt:  task.StartAt,
+		StopAt:   task.StopAt,
+		Duration: int(task.Duration),
+		Filename: task.ID + ".mp3",
+		Errormsg: errorMsg,
+	}
 }
