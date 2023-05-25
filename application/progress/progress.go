@@ -19,6 +19,15 @@ type ProgressEventPayload struct {
 	Status Status `json:"status"`
 }
 
+func (e *ProgressEventPayload) AggragetedProgress() int {
+	// i have 2 stages is now stge percentage is less than 50
+	if e.Stage == DownloadStage {
+		return e.Prog / 2
+	} else {
+		return e.Prog/2 + 50
+	}
+}
+
 type Progress struct {
 	Ch   chan ProgressEventPayload `json:",omitempty"`
 	Done chan struct{}
@@ -62,13 +71,4 @@ func (p *Progress) Listen() <-chan ProgressEventPayload {
 
 func (p *Progress) Wait() <-chan struct{} {
 	return p.Done
-}
-
-func (p *Progress) ToPercentage(progEvent ProgressEventPayload) int {
-	// i have 2 stages is now stge percentage is less than 50
-	if progEvent.Stage == DownloadStage {
-		return progEvent.Prog / 2
-	} else {
-		return progEvent.Prog/2 + 50
-	}
 }
