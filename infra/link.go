@@ -6,8 +6,9 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"os"
 	"time"
+
+	"3205.team/go-mp3-converter/cfg"
 )
 
 // Link -  is a microservice that is responsible for returning a downloadable url for a video
@@ -37,7 +38,7 @@ func Fetch(url string) (*LinkResultData, error) {
 		Timeout: 15 * time.Second,
 	}
 
-	resp, err := client.Post(os.Getenv("LINK_URL"), "application/json", bytes.NewReader(buf))
+	resp, err := client.Post(cfg.AppConfig.LinkURL, "application/json", bytes.NewReader(buf))
 	if err != nil {
 		return nil, err
 	}

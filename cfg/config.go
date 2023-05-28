@@ -2,6 +2,7 @@ package cfg
 
 import (
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -33,22 +34,24 @@ type ConfigType struct {
 	LinkURL string
 }
 
-func crossPlatformBinary(path string) string {
+func CrossPlatformBinary(path string) string {
 	if os.PathSeparator == '\\' {
 		return path + ".exe"
 	}
 	return path
 }
 
+var port, _ = strconv.Atoi(os.Getenv("REDIS_PORT"))
+
 var AppConfig = &ConfigType{
-	FfmpegbinPath:    crossPlatformBinary("./bin/ffmpeg"),
-	FfprobebinPath:   crossPlatformBinary("./bin/ffprobe"),
+	FfmpegbinPath:    CrossPlatformBinary("./bin/ffmpeg"),
+	FfprobebinPath:   CrossPlatformBinary("./bin/ffprobe"),
 	TempDir:          "./tmp",
 	ProgressInterval: time.Second * 1,
 	FileTTL:          time.Minute * 15,
 	Rdb: RedisConfig{
-		Host:         "178.63.85.247",
-		Port:         26233,
+		Host:         os.Getenv("REDIS_HOST"),
+		Port:         port,
 		TaskTable:    "ffmpeg:mp3:task",
 		QueueTable:   "ffmpeg:mp3:queue",
 		PoolInterval: time.Millisecond * 100,

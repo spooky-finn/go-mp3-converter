@@ -1,10 +1,11 @@
-package main
+package test
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"testing"
 	"time"
 
@@ -56,42 +57,61 @@ func prefillQueue(client *redis.Client) {
 		}
 
 		client.LPush(ctx, cfg.AppConfig.Rdb.QueueTable, string(buf))
+		time.Sleep(100 * time.Millisecond)
 	}
 	fmt.Println("redis task queue fullfilled")
 }
 
-// func TestFullyPrefillQueue(t *testing.T) {
-// 	client := pkg.GetRedisClient()
-// 	ctx := context.Background()
+func bootstapTest() (client *redis.Client) {
+	tempDir := path.Join("../", cfg.AppConfig.TempDir)
+	err := godotenv.Load("../.env")
 
-// 	ClearQueue(client)
-// 	PrefillQueue(client)
+	if err := os.RemoveAll(tempDir); err != nil {
+		panic(err)
+	}
+	if err := os.Mkdir(TestConfig.TempDir, os.ModePerm); err != nil {
+		panic(err)
+	}
 
-// 	itemsInRedis := client.LLen(ctx, cfg.AppConfig.Rdb.QueueTable)
-// 	assert.Equal(t, int64(3), itemsInRedis.Val(), "redis task queue not fullfilled")
-// }
-
-func TestRedisScheduler(t *testing.T) {
-	tempDir := cfg.AppConfig.TempDir
-	os.Mkdir(tempDir, os.ModePerm)
-	err := godotenv.Load(".env")
 	if err != nil {
 		pkg.Logger.Fatalf("Error loading .env file: %v", err)
 	}
 
-	client := pkg.GetRedisClient()
-	ctx := context.Background()
+	client = pkg.GetRedisClient()
 	mp3converter := mp3converter.New()
 
 	clearQueue(client)
 	prefillQueue(client)
 
-	temsInRedis := client.LLen(ctx, cfg.AppConfig.Rdb.QueueTable)
-	assert.Equal(t, int64(len(payload)), temsInRedis.Val(), "redis task queue not empty")
-
-	// create redis scheduler
 	redisscheduler.NewRedisScheduler(client, mp3converter)
 
-	// wait for all tasks to be processed
-	time.Sleep(3 * time.Minute)
+	return client
+}
+
+func TestRedisScheduler(t *testing.T) {
+	timeout := time.After(3 * time.Minute)
+	done := make(chan bool)
+
+	client := bootstapTest()
+
+	incomingTasks := client.LLen(context.Background(), cfg.AppConfig.Rdb.QueueTable)
+	assert.Equal(t, int64(len(payload)), incomingTasks.Val(), "redis task queue not empty")
+
+	watcher := NewTempDirWatcher()
+
+	go func() {
+		for {
+			if watcher.IsNotEmpty() && watcher.HaveOnlyMp3files() && watcher.IsLenOf(len(payload)) {
+				done <- true
+				break
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}()
+
+	select {
+	case <-timeout:
+		t.Fatal("Test didn't finish in time")
+	case <-done:
+	}
 }
